@@ -38,9 +38,11 @@ services:
         sync: false
     healthCheckPath: /api/health
 
-# Static Sites (separate from services)
-staticSites:
-  - name: bakery-frontend
+  # Frontend Static Site (no region for static)
+  - type: web
+    name: bakery-frontend
+    runtime: static
+    plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
