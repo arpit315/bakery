@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { paymentApi, orderApi } from '@/services/api.js';
-import { CreditCard, MapPin, User, Phone, Mail, Loader2, AlertCircle, Check, ShoppingBag, Truck, Shield, Lock } from 'lucide-react';
+import { orderApi } from '@/services/api.js';
+import StripePayment from '@/components/StripePayment.jsx';
+import { CreditCard, MapPin, User, Phone, Mail, Loader2, AlertCircle, Check, ShoppingBag, Truck, Shield, Lock, ArrowLeft } from 'lucide-react';
 
 // InputWithError component defined OUTSIDE Checkout to prevent focus loss
 const InputWithError = ({ icon: Icon, label, error, required = true, disabled, ...props }) => (
@@ -66,6 +67,7 @@ const Checkout = () => {
   const [errors, setErrors] = useState({});
   const [currentStep, setCurrentStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' or 'cod'
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -144,6 +146,18 @@ const Checkout = () => {
       return;
     }
 
+    // For online payment, show the payment form
+    if (paymentMethod === 'online') {
+      setCurrentStep(2);
+      setShowPaymentForm(true);
+      return;
+    }
+
+    // For COD, place order directly
+    await placeOrder(null);
+  };
+
+  const placeOrder = async (paymentData) => {
     setLoading(true);
     setCurrentStep(3);
 
@@ -169,16 +183,8 @@ const Checkout = () => {
         total: total,
         paymentMethod: paymentMethod,
         paymentStatus: paymentMethod === 'cod' ? 'pending' : 'paid',
+        paymentId: paymentData?.paymentId || null,
       };
-
-      // For online payment, create payment intent first
-      if (paymentMethod === 'online') {
-        const paymentResponse = await paymentApi.createIntent(total);
-        if (!paymentResponse.success) {
-          throw new Error('Failed to create payment');
-        }
-        orderData.paymentId = paymentResponse.paymentIntentId;
-      }
 
       const orderResponse = await orderApi.create(orderData);
 
@@ -186,7 +192,7 @@ const Checkout = () => {
         toast({
           title: paymentMethod === 'cod'
             ? "Order Placed! 📦"
-            : "Order Placed Successfully! 🎉",
+            : "Payment Successful! 🎉",
           description: paymentMethod === 'cod'
             ? `Order ${orderResponse.data.orderNumber} - Pay ₹${total} on delivery!`
             : `Order ${orderResponse.data.orderNumber} - Check your email for confirmation!`,
@@ -199,6 +205,7 @@ const Checkout = () => {
     } catch (error) {
       console.error('Checkout error:', error);
       setCurrentStep(2);
+      setShowPaymentForm(false);
       toast({
         title: "Order Failed",
         description: error.message || "Something went wrong. Please try again.",
@@ -207,6 +214,18 @@ const Checkout = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePaymentSuccess = async (paymentData) => {
+    await placeOrder(paymentData);
+  };
+
+  const handlePaymentError = (error) => {
+    toast({
+      title: "Payment Failed",
+      description: error.message || "Payment could not be processed.",
+      variant: "destructive",
+    });
   };
 
   if (items.length === 0) {
@@ -423,31 +442,61 @@ const Checkout = () => {
                   )}
                 </div>
 
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full rounded-full py-7 text-lg font-semibold bg-gradient-to-r from-primary to-golden hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-3 mt-6"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      {paymentMethod === 'cod' ? 'Placing Order...' : 'Processing Payment...'}
-                    </>
-                  ) : (
-                    <>
-                      {paymentMethod === 'cod' ? (
-                        <>
-                          📦 Place Order - ₹{finalTotal.toFixed(0)}
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="w-5 h-5" />
-                          Pay ₹{finalTotal.toFixed(0)}
-                        </>
-                      )}
-                    </>
-                  )}
-                </Button>
+                {/* Show Stripe Payment Form or Continue Button */}
+                {showPaymentForm && paymentMethod === 'online' ? (
+                  <div className="mt-6 space-y-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPaymentForm(false);
+                        setCurrentStep(1);
+                      }}
+                      className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm mb-4"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Back to details
+                    </button>
+
+                    <div className="bg-gradient-to-r from-primary/10 to-golden/10 rounded-xl p-4">
+                      <h3 className="font-semibold text-foreground mb-1">💳 Enter Card Details</h3>
+                      <p className="text-sm text-muted-foreground">Your payment is secure and encrypted</p>
+                    </div>
+
+                    <StripePayment
+                      amount={finalTotal}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                      customerName={formData.name}
+                      customerEmail={formData.email}
+                    />
+                  </div>
+                ) : (
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full rounded-full py-7 text-lg font-semibold bg-gradient-to-r from-primary to-golden hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-3 mt-6"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        {paymentMethod === 'cod' ? 'Placing Order...' : 'Processing...'}
+                      </>
+                    ) : (
+                      <>
+                        {paymentMethod === 'cod' ? (
+                          <>
+                            📦 Place Order - ₹{finalTotal.toFixed(0)}
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="w-5 h-5" />
+                            Continue to Payment - ₹{finalTotal.toFixed(0)}
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Button>
+                )}
               </form>
             </div>
           </div>
