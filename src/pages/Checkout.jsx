@@ -68,12 +68,16 @@ const Checkout = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' or 'cod'
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [pincodeInfo, setPincodeInfo] = useState(null);
+  const [fetchingPincode, setFetchingPincode] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     address: '',
     pincode: '',
+    city: '',
+    state: '',
   });
 
   // Pre-fill form with user data if logged in
@@ -131,6 +135,44 @@ const Checkout = () => {
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+
+    // Auto-fetch location for pincode
+    if (name === 'pincode' && /^[1-9][0-9]{5}$/.test(value)) {
+      fetchPincodeInfo(value);
+    }
+  };
+
+  // Fetch location info from pincode
+  const fetchPincodeInfo = async (pincode) => {
+    setFetchingPincode(true);
+    setPincodeInfo(null);
+
+    try {
+      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const data = await response.json();
+
+      if (data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
+        const postOffice = data[0].PostOffice[0];
+        setPincodeInfo({
+          area: postOffice.Name,
+          city: postOffice.District,
+          state: postOffice.State,
+        });
+        // Auto-fill city and state
+        setFormData(prev => ({
+          ...prev,
+          city: postOffice.District,
+          state: postOffice.State,
+        }));
+      } else {
+        setPincodeInfo({ error: 'Invalid pincode' });
+      }
+    } catch (error) {
+      console.error('Pincode fetch error:', error);
+      setPincodeInfo({ error: 'Could not verify pincode' });
+    } finally {
+      setFetchingPincode(false);
     }
   };
 
@@ -356,19 +398,45 @@ const Checkout = () => {
                   )}
                 </div>
 
-                <InputWithError
-                  icon={MapPin}
-                  label="Pincode (6 digits)"
-                  id="pincode"
-                  name="pincode"
-                  type="text"
-                  maxLength={6}
-                  value={formData.pincode}
-                  onChange={handleInputChange}
-                  placeholder="110001"
-                  error={errors.pincode}
-                  disabled={loading}
-                />
+                <div>
+                  <InputWithError
+                    icon={MapPin}
+                    label="Pincode (6 digits)"
+                    id="pincode"
+                    name="pincode"
+                    type="text"
+                    maxLength={6}
+                    value={formData.pincode}
+                    onChange={handleInputChange}
+                    placeholder="110001"
+                    error={errors.pincode}
+                    disabled={loading}
+                  />
+
+                  {/* Pincode Location Info */}
+                  {fetchingPincode && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Looking up pincode...
+                    </div>
+                  )}
+
+                  {pincodeInfo && !fetchingPincode && (
+                    pincodeInfo.error ? (
+                      <div className="mt-2 flex items-center gap-2 text-sm text-destructive">
+                        <AlertCircle className="w-4 h-4" />
+                        {pincodeInfo.error}
+                      </div>
+                    ) : (
+                      <div className="mt-2 flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-lg px-3 py-2">
+                        <Check className="w-4 h-4" />
+                        <span>
+                          <strong>{pincodeInfo.area}</strong>, {pincodeInfo.city}, {pincodeInfo.state}
+                        </span>
+                      </div>
+                    )
+                  )}
+                </div>
 
                 {/* Payment Method Selection */}
                 <div className="mt-6">
