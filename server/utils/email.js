@@ -1,13 +1,19 @@
 import nodemailer from 'nodemailer';
 
-// Create transporter
-const createTransporter = () => {
+// Transporter instance (lazy initialization)
+let transporter = null;
+
+// Create transporter (called lazily on first email send)
+const getTransporter = () => {
+    if (transporter) return transporter;
+
     // For development, use Ethereal (fake SMTP)
     // For production, use real SMTP (Gmail, SendGrid, etc.)
 
     if (process.env.EMAIL_HOST && process.env.EMAIL_USER) {
+        console.log('📧 Email configured with:', process.env.EMAIL_HOST);
         // Use configured SMTP
-        return nodemailer.createTransport({
+        transporter = nodemailer.createTransport({
             host: process.env.EMAIL_HOST,
             port: process.env.EMAIL_PORT || 587,
             secure: process.env.EMAIL_SECURE === 'true',
@@ -16,10 +22,12 @@ const createTransporter = () => {
                 pass: process.env.EMAIL_PASS,
             },
         });
+        return transporter;
     }
 
+    console.log('⚠️ Email not configured - using dev fallback');
     // Fallback to console logging in development
-    return {
+    transporter = {
         sendMail: async (options) => {
             console.log('📧 Email would be sent:');
             console.log('To:', options.to);
@@ -28,14 +36,14 @@ const createTransporter = () => {
             return { messageId: 'dev-' + Date.now() };
         }
     };
+    return transporter;
 };
-
-const transporter = createTransporter();
 
 // Send email helper
 export const sendEmail = async ({ to, subject, html, text }) => {
     try {
-        const info = await transporter.sendMail({
+        const emailTransporter = getTransporter();
+        const info = await emailTransporter.sendMail({
             from: process.env.EMAIL_FROM || '"Bakery Boutique" <noreply@bakeryboutique.com>',
             to,
             subject,
