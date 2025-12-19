@@ -82,6 +82,19 @@ const userSchema = new mongoose.Schema({
         type: Date,
         select: false,
     },
+    // Account activation (for registration OTP flow)
+    isActive: {
+        type: Boolean,
+        default: false,
+    },
+    registrationOTP: {
+        type: String,
+        select: false,
+    },
+    registrationOTPExpires: {
+        type: Date,
+        select: false,
+    },
 }, {
     timestamps: true,
 });

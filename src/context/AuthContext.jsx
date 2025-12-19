@@ -55,6 +55,26 @@ export const AuthProvider = ({ children }) => {
         return response;
     };
 
+    // OTP-based registration - Step 1: Initiate (sends OTP)
+    const initiateRegister = async (userData) => {
+        return await authApi.initiateRegister(userData);
+    };
+
+    // OTP-based registration - Step 2: Complete (verify OTP)
+    const completeRegister = async (email, otp) => {
+        const response = await authApi.completeRegister(email, otp);
+        if (response.success) {
+            setUser(response.data);
+            localStorage.setItem('user', JSON.stringify(response.data));
+        }
+        return response;
+    };
+
+    // OTP-based registration - Resend OTP
+    const resendRegisterOTP = async (email) => {
+        return await authApi.resendRegisterOTP(email);
+    };
+
     const logout = () => {
         authApi.logout();
         setUser(null);
@@ -91,6 +111,9 @@ export const AuthProvider = ({ children }) => {
                 isAdmin,
                 login,
                 register,
+                initiateRegister,
+                completeRegister,
+                resendRegisterOTP,
                 logout,
                 refreshUser,
                 updateUser,

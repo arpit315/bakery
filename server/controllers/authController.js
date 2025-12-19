@@ -9,7 +9,205 @@ const generateToken = (id) => {
     });
 };
 
-// @desc    Register new user
+// @desc    Initiate registration - creates pending user and sends OTP
+// @route   POST /api/auth/initiate-register
+// @access  Public
+export const initiateRegistration = async (req, res) => {
+    try {
+        const { name, email, password, phone, address, pincode } = req.body;
+
+        // Check if user exists and is active
+        const existingUser = await User.findOne({ email });
+        if (existingUser && existingUser.isActive) {
+            return res.status(400).json({
+                success: false,
+                message: 'User already exists with this email',
+            });
+        }
+
+        // Generate OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        if (existingUser && !existingUser.isActive) {
+            // Update existing pending user with new OTP and data
+            existingUser.name = name;
+            existingUser.password = password;
+            existingUser.phone = phone;
+            existingUser.address = address;
+            existingUser.pincode = pincode;
+            existingUser.registrationOTP = otp;
+            existingUser.registrationOTPExpires = otpExpires;
+            await existingUser.save();
+        } else {
+            // Create new pending user
+            await User.create({
+                name,
+                email,
+                password,
+                phone,
+                address,
+                pincode,
+                isActive: false,
+                registrationOTP: otp,
+                registrationOTPExpires: otpExpires,
+            });
+        }
+
+        // Send OTP email
+        const otpEmail = emailTemplates.registrationOTP(name, otp);
+        await sendEmail({
+            to: email,
+            ...otpEmail
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'OTP sent to your email. Please verify to complete registration.',
+            data: { email }
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// @desc    Complete registration - verify OTP and activate account
+// @route   POST /api/auth/complete-register
+// @access  Public
+export const completeRegistration = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and OTP are required',
+            });
+        }
+
+        const user = await User.findOne({ email }).select('+registrationOTP +registrationOTPExpires');
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: 'No pending registration found for this email',
+            });
+        }
+
+        if (user.isActive) {
+            return res.status(400).json({
+                success: false,
+                message: 'Account is already active. Please login.',
+            });
+        }
+
+        // Check OTP
+        if (!user.registrationOTP || user.registrationOTP !== otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid OTP',
+            });
+        }
+
+        if (user.registrationOTPExpires < new Date()) {
+            return res.status(400).json({
+                success: false,
+                message: 'OTP has expired. Please request a new one.',
+            });
+        }
+
+        // Activate account
+        user.isActive = true;
+        user.isEmailVerified = true; // Email is verified since they received OTP
+        user.registrationOTP = undefined;
+        user.registrationOTPExpires = undefined;
+        await user.save({ validateBeforeSave: false });
+
+        const token = generateToken(user._id);
+
+        // Send welcome email
+        const welcomeEmail = emailTemplates.welcome(user.name);
+        await sendEmail({
+            to: email,
+            ...welcomeEmail
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Registration successful! Welcome to Bakery Boutique.',
+            data: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                address: user.address,
+                pincode: user.pincode,
+                role: user.role,
+                isEmailVerified: user.isEmailVerified,
+                isPhoneVerified: user.isPhoneVerified,
+                token,
+            },
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// @desc    Resend registration OTP
+// @route   POST /api/auth/resend-register-otp
+// @access  Public
+export const resendRegistrationOTP = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required',
+            });
+        }
+
+        const user = await User.findOne({ email, isActive: false });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: 'No pending registration found for this email',
+            });
+        }
+
+        // Generate new OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        user.registrationOTP = otp;
+        user.registrationOTPExpires = new Date(Date.now() + 10 * 60 * 1000);
+        await user.save({ validateBeforeSave: false });
+
+        // Send OTP email
+        const otpEmail = emailTemplates.registrationOTP(user.name, otp);
+        await sendEmail({
+            to: email,
+            ...otpEmail
+        });
+
+        res.json({
+            success: true,
+            message: 'New OTP sent to your email',
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// @desc    Register new user (legacy - kept for backward compatibility)
 // @route   POST /api/auth/register
 // @access  Public
 export const register = async (req, res) => {
@@ -25,7 +223,7 @@ export const register = async (req, res) => {
             });
         }
 
-        // Create user
+        // Create user (directly active for legacy support)
         const user = await User.create({
             name,
             email,
@@ -33,6 +231,7 @@ export const register = async (req, res) => {
             phone,
             address,
             pincode,
+            isActive: true,
         });
 
         const token = generateToken(user._id);
@@ -89,6 +288,14 @@ export const login = async (req, res) => {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials',
+            });
+        }
+
+        // Check if account is active (completed OTP verification)
+        if (!user.isActive) {
+            return res.status(401).json({
+                success: false,
+                message: 'Please complete your registration by verifying OTP sent to your email',
             });
         }
 

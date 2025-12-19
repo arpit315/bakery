@@ -146,7 +146,35 @@ export const paymentApi = {
 
 // ============ AUTH API ============
 export const authApi = {
-    // Register
+    // Initiate registration (sends OTP)
+    initiateRegister: async (userData) => {
+        return apiCall('/auth/initiate-register', {
+            method: 'POST',
+            body: JSON.stringify(userData),
+        });
+    },
+
+    // Complete registration (verify OTP)
+    completeRegister: async (email, otp) => {
+        const response = await apiCall('/auth/complete-register', {
+            method: 'POST',
+            body: JSON.stringify({ email, otp }),
+        });
+        if (response.data?.token) {
+            localStorage.setItem('token', response.data.token);
+        }
+        return response;
+    },
+
+    // Resend registration OTP
+    resendRegisterOTP: async (email) => {
+        return apiCall('/auth/resend-register-otp', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+        });
+    },
+
+    // Register (legacy - direct registration without OTP)
     register: async (userData) => {
         const response = await apiCall('/auth/register', {
             method: 'POST',

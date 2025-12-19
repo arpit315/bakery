@@ -236,6 +236,20 @@ export const updateOrderStatus = async (req, res) => {
             });
         }
 
+        // Send delivery notification email when order is delivered
+        if (status === 'delivered' && order.customerEmail) {
+            try {
+                const deliveryEmail = emailTemplates.orderDelivered(order);
+                await sendEmail({
+                    to: order.customerEmail,
+                    ...deliveryEmail
+                });
+            } catch (emailError) {
+                console.error('Failed to send delivery notification email:', emailError);
+                // Don't fail the status update if email fails
+            }
+        }
+
         res.json({
             success: true,
             data: order,

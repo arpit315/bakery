@@ -9,12 +9,20 @@ import {
     verifyEmail,
     sendPhoneOTP,
     verifyPhone,
+    initiateRegistration,
+    completeRegistration,
+    resendRegistrationOTP,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Public routes
+// Public routes - OTP-based registration (recommended)
+router.post('/initiate-register', initiateRegistration);
+router.post('/complete-register', completeRegistration);
+router.post('/resend-register-otp', resendRegistrationOTP);
+
+// Legacy registration (direct - no OTP)
 router.post('/register', register);
 router.post('/login', login);
 router.post('/create-admin', createAdmin); // For initial setup only
@@ -32,3 +40,4 @@ router.post('/send-phone-otp', protect, sendPhoneOTP);
 router.post('/verify-phone', protect, verifyPhone);
 
 export default router;
+
