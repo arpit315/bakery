@@ -347,7 +347,7 @@ const Checkout = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    placeholder="John Doe"
+                    placeholder=""
                     error={errors.name}
                     disabled={loading}
                   />
@@ -361,7 +361,7 @@ const Checkout = () => {
                     maxLength={10}
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="9876543210"
+                    placeholder=""
                     error={errors.phone}
                     disabled={loading}
                   />
@@ -375,7 +375,7 @@ const Checkout = () => {
                   type="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="you@example.com"
+                  placeholder=""
                   error={errors.email}
                   disabled={loading}
                 />
@@ -391,7 +391,7 @@ const Checkout = () => {
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    placeholder="123 Main Street, Apt 4B, City, State"
+                    placeholder=""
                     className={`rounded-xl min-h-[100px] border-2 transition-all duration-300 ${errors.address ? 'border-destructive bg-destructive/5' : 'border-muted focus:border-primary'
                       }`}
                     disabled={loading}
@@ -414,7 +414,7 @@ const Checkout = () => {
                     maxLength={6}
                     value={formData.pincode}
                     onChange={handleInputChange}
-                    placeholder="110001"
+                    placeholder=""
                     error={errors.pincode}
                     disabled={loading}
                   />

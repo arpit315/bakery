@@ -742,10 +742,9 @@ export const forgotPassword = async (req, res) => {
         const user = await User.findOne({ email, isActive: true });
 
         if (!user) {
-            // Don't reveal if user exists or not for security
-            return res.json({
-                success: true,
-                message: 'If an account with that email exists, you will receive a password reset OTP.',
+            return res.status(404).json({
+                success: false,
+                message: 'Email not registered. Please check your email or create an account.',
             });
         }
 
