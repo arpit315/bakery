@@ -724,3 +724,124 @@ export const createAdmin = async (req, res) => {
         });
     }
 };
+
+// @desc    Request password reset OTP
+// @route   POST /api/auth/forgot-password
+// @access  Public
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required',
+            });
+        }
+
+        const user = await User.findOne({ email, isActive: true });
+
+        if (!user) {
+            // Don't reveal if user exists or not for security
+            return res.json({
+                success: true,
+                message: 'If an account with that email exists, you will receive a password reset OTP.',
+            });
+        }
+
+        // Check if user registered with Google (no password)
+        if (user.googleId && !user.password) {
+            return res.status(400).json({
+                success: false,
+                message: 'This account uses Google Sign-In. Please login with Google.',
+            });
+        }
+
+        // Generate OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        user.emailOTP = otp;
+        user.emailOTPExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        await user.save({ validateBeforeSave: false });
+
+        // Send password reset email
+        const resetEmail = emailTemplates.passwordReset(user.name, otp);
+        await sendEmail({
+            to: email,
+            ...resetEmail
+        });
+
+        res.json({
+            success: true,
+            message: 'Password reset OTP sent to your email',
+            data: { email }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// @desc    Reset password with OTP
+// @route   POST /api/auth/reset-password
+// @access  Public
+export const resetPassword = async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email, OTP, and new password are required',
+            });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password must be at least 6 characters',
+            });
+        }
+
+        const user = await User.findOne({ email }).select('+emailOTP +emailOTPExpires +password');
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid request',
+            });
+        }
+
+        // Check OTP
+        if (!user.emailOTP || user.emailOTP !== otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid OTP',
+            });
+        }
+
+        if (user.emailOTPExpires < new Date()) {
+            return res.status(400).json({
+                success: false,
+                message: 'OTP has expired. Please request a new one.',
+            });
+        }
+
+        // Update password
+        user.password = newPassword;
+        user.emailOTP = undefined;
+        user.emailOTPExpires = undefined;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Password has been reset successfully. You can now login with your new password.',
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};

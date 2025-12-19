@@ -198,6 +198,22 @@ export const authApi = {
         return response;
     },
 
+    // Forgot password - request OTP
+    forgotPassword: async (email) => {
+        return apiCall('/auth/forgot-password', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+        });
+    },
+
+    // Reset password with OTP
+    resetPassword: async (email, otp, newPassword) => {
+        return apiCall('/auth/reset-password', {
+            method: 'POST',
+            body: JSON.stringify({ email, otp, newPassword }),
+        });
+    },
+
     // Login
     login: async (credentials) => {
         const response = await apiCall('/auth/login', {

@@ -92,6 +92,41 @@ export const emailTemplates = {
         text: `Hello ${name}! Your OTP for Bakery Boutique email verification is: ${otp}. Valid for 10 minutes.`
     }),
 
+    // Password Reset OTP
+    passwordReset: (name, otp) => ({
+        subject: '🔑 Reset Your Password - Bakery Boutique',
+        html: `
+            <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #f8e1e7 0%, #fef3e2 100%); border-radius: 16px;">
+                    <h1 style="color: #ec4899; margin: 0;">🧁 Bakery Boutique</h1>
+                </div>
+                <div style="padding: 30px 20px; text-align: center;">
+                    <h2 style="color: #333;">Password Reset Request 🔑</h2>
+                    <p style="color: #666; font-size: 16px;">
+                        Hi ${name}, we received a request to reset your password.
+                    </p>
+                    <p style="color: #666; font-size: 16px;">
+                        Use this OTP to reset your password:
+                    </p>
+                    <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                        <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #ec4899;">
+                            ${otp}
+                        </span>
+                    </div>
+                    <p style="color: #999; font-size: 14px;">
+                        This OTP is valid for 10 minutes. Do not share it with anyone.
+                    </p>
+                </div>
+                <div style="text-align: center; padding: 20px; background: #fff3cd; border-radius: 12px;">
+                    <p style="color: #856404; margin: 0; font-size: 14px;">
+                        ⚠️ If you didn't request this, please ignore this email. Your password will remain unchanged.
+                    </p>
+                </div>
+            </div>
+        `,
+        text: `Hi ${name}! Your OTP for password reset is: ${otp}. Valid for 10 minutes. If you didn't request this, please ignore.`
+    }),
+
     // Order confirmation
     orderConfirmation: (order) => ({
         subject: `🎉 Order Confirmed - ${order.orderNumber} - Bakery Boutique`,

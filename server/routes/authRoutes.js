@@ -13,6 +13,8 @@ import {
     completeRegistration,
     resendRegistrationOTP,
     googleAuth,
+    forgotPassword,
+    resetPassword,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -25,6 +27,10 @@ router.post('/resend-register-otp', resendRegistrationOTP);
 
 // Google OAuth
 router.post('/google', googleAuth);
+
+// Password reset
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 // Legacy registration (direct - no OTP)
 router.post('/register', register);

@@ -16,6 +16,7 @@ import Checkout from "./pages/Checkout.jsx";
 import Orders from "./pages/Orders.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
 import Profile from "./pages/Profile.jsx";
 import Dashboard from "./pages/admin/Dashboard.jsx";
 import Products from "./pages/admin/Products.jsx";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/orders" element={<Orders />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
               {/* Protected routes (require login) */}
               <Route path="/profile" element={
