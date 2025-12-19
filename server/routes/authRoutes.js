@@ -12,6 +12,7 @@ import {
     initiateRegistration,
     completeRegistration,
     resendRegistrationOTP,
+    googleAuth,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -21,6 +22,9 @@ const router = express.Router();
 router.post('/initiate-register', initiateRegistration);
 router.post('/complete-register', completeRegistration);
 router.post('/resend-register-otp', resendRegistrationOTP);
+
+// Google OAuth
+router.post('/google', googleAuth);
 
 // Legacy registration (direct - no OTP)
 router.post('/register', register);

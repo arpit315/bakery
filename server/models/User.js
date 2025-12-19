@@ -22,17 +22,32 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Password is required'],
+        required: function () {
+            // Password is required only if not using Google OAuth
+            return !this.googleId;
+        },
         minlength: [6, 'Password must be at least 6 characters'],
         select: false, // Don't include password in queries by default
     },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true, // Allows multiple null values
+    },
+    avatar: {
+        type: String, // Google profile picture URL
+    },
     phone: {
         type: String,
-        required: [true, 'Phone number is required'],
+        required: function () {
+            // Phone is required only if not using Google OAuth
+            return !this.googleId;
+        },
         validate: {
             validator: function (v) {
                 // Indian mobile number - 10 digits starting with 6-9
-                return /^[6-9]\d{9}$/.test(v);
+                // Skip validation if empty (for Google users)
+                return !v || /^[6-9]\d{9}$/.test(v);
             },
             message: 'Please enter a valid 10-digit mobile number'
         }

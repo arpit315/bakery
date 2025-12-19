@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
+import GoogleSignInButton from '@/components/GoogleSignInButton.jsx';
 import {
     Mail, Lock, Loader2, Eye, EyeOff, User, Phone, MapPin,
     CheckCircle2, AlertCircle, ArrowLeft, RefreshCw
@@ -316,6 +317,21 @@ const Register = () => {
                     <div className="bg-card rounded-2xl p-6 md:p-8 shadow-card animate-fade-up">
                         {step === 1 ? (
                             <form onSubmit={handleInitiateRegister} className="space-y-5">
+                                {/* Google Sign-In */}
+                                <GoogleSignInButton buttonText="signup_with" />
+
+                                {/* Divider */}
+                                <div className="relative my-6">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-muted" />
+                                    </div>
+                                    <div className="relative flex justify-center text-sm">
+                                        <span className="bg-card px-4 text-muted-foreground">
+                                            or continue with email
+                                        </span>
+                                    </div>
+                                </div>
+
                                 {/* Name */}
                                 <InputWithError
                                     icon={User}

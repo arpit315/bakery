@@ -186,6 +186,18 @@ export const authApi = {
         return response;
     },
 
+    // Google OAuth
+    googleAuth: async (credential) => {
+        const response = await apiCall('/auth/google', {
+            method: 'POST',
+            body: JSON.stringify({ credential }),
+        });
+        if (response.data?.token) {
+            localStorage.setItem('token', response.data.token);
+        }
+        return response;
+    },
+
     // Login
     login: async (credentials) => {
         const response = await apiCall('/auth/login', {

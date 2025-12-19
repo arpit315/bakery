@@ -75,6 +75,16 @@ export const AuthProvider = ({ children }) => {
         return await authApi.resendRegisterOTP(email);
     };
 
+    // Google OAuth login
+    const loginWithGoogle = async (credential) => {
+        const response = await authApi.googleAuth(credential);
+        if (response.success) {
+            setUser(response.data);
+            localStorage.setItem('user', JSON.stringify(response.data));
+        }
+        return response;
+    };
+
     const logout = () => {
         authApi.logout();
         setUser(null);
@@ -110,6 +120,7 @@ export const AuthProvider = ({ children }) => {
                 isAuthenticated,
                 isAdmin,
                 login,
+                loginWithGoogle,
                 register,
                 initiateRegister,
                 completeRegister,

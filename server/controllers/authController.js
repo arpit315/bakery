@@ -1,12 +1,106 @@
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
 import { sendEmail, emailTemplates } from '../utils/email.js';
+
+// Google OAuth client
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Generate JWT token
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: '30d',
     });
+};
+
+// @desc    Google OAuth Sign-In/Sign-Up
+// @route   POST /api/auth/google
+// @access  Public
+export const googleAuth = async (req, res) => {
+    try {
+        const { credential } = req.body;
+
+        if (!credential) {
+            return res.status(400).json({
+                success: false,
+                message: 'Google credential is required',
+            });
+        }
+
+        // Verify the Google token
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        const { sub: googleId, email, name, picture } = payload;
+
+        // Check if user exists with this Google ID or email
+        let user = await User.findOne({
+            $or: [{ googleId }, { email }]
+        });
+
+        if (user) {
+            // User exists - update Google info if needed
+            if (!user.googleId) {
+                user.googleId = googleId;
+                user.avatar = picture;
+                user.isEmailVerified = true;
+                user.isActive = true;
+                await user.save({ validateBeforeSave: false });
+            }
+        } else {
+            // Create new user with Google account
+            user = await User.create({
+                name,
+                email,
+                googleId,
+                avatar: picture,
+                isEmailVerified: true,
+                isActive: true,
+            });
+
+            // Send welcome email
+            try {
+                const welcomeEmail = emailTemplates.welcome(name);
+                await sendEmail({
+                    to: email,
+                    ...welcomeEmail
+                });
+            } catch (emailError) {
+                console.error('Failed to send welcome email:', emailError);
+            }
+        }
+
+        const token = generateToken(user._id);
+
+        res.json({
+            success: true,
+            message: user.createdAt === user.updatedAt ?
+                'Welcome to Bakery Boutique!' :
+                'Welcome back!',
+            data: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                address: user.address,
+                pincode: user.pincode,
+                role: user.role,
+                avatar: user.avatar,
+                isEmailVerified: user.isEmailVerified,
+                isPhoneVerified: user.isPhoneVerified,
+                token,
+            },
+        });
+    } catch (error) {
+        console.error('Google auth error:', error);
+        res.status(400).json({
+            success: false,
+            message: 'Google authentication failed',
+        });
+    }
 };
 
 // @desc    Initiate registration - creates pending user and sends OTP
