@@ -1,0 +1,33 @@
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext.jsx';
+import { toast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+
+const AdminRoute = ({ children }) => {
+    const { isAuthenticated, isAdmin, loading } = useAuth();
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
+    }
+
+    if (!isAdmin) {
+        toast({
+            title: "Access Denied",
+            description: "You don't have permission to access this page.",
+            variant: "destructive",
+        });
+        return <Navigate to="/" replace />;
+    }
+
+    return children;
+};
+
+export default AdminRoute;
