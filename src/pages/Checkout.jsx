@@ -159,12 +159,18 @@ const Checkout = () => {
           city: postOffice.District,
           state: postOffice.State,
         });
-        // Auto-fill city and state
+        // Auto-fill address, city, and state
+        const locationStr = `${postOffice.Name}, ${postOffice.District}, ${postOffice.State}`;
         setFormData(prev => ({
           ...prev,
+          address: prev.address ? prev.address : locationStr, // Only fill if empty
           city: postOffice.District,
           state: postOffice.State,
         }));
+        // If address was empty, also clear any address error
+        if (!formData.address) {
+          setErrors(prev => ({ ...prev, address: '' }));
+        }
       } else {
         setPincodeInfo({ error: 'Invalid pincode' });
       }
