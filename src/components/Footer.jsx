@@ -159,19 +159,19 @@ const Footer = () => {
                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-golden/20 transition-colors">
                   <MapPin className="w-4 h-4" />
                 </div>
-                <span className="pt-1">Muzaffarpur, Patna, Bihar</span>
+                <span className="pt-1">Arwal, Patna, Bihar</span>
               </li>
               <li className="flex items-start gap-3 text-primary-foreground/70 group">
                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-golden/20 transition-colors">
                   <Phone className="w-4 h-4" />
                 </div>
-                <span className="pt-1">+91 7003652693</span>
+                <span className="pt-1">+91 7003652694</span>
               </li>
               <li className="flex items-start gap-3 text-primary-foreground/70 group">
                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-golden/20 transition-colors">
                   <Mail className="w-4 h-4" />
                 </div>
-                <span className="pt-1">sumangupta12@gmail.com</span>
+                <span className="pt-1">arpitkuma10@gmail.com</span>
               </li>
             </ul>
           </div>
